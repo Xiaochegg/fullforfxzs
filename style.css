@@ -156,3 +156,16 @@ input,select{font-family:inherit;}
   .main{padding-top:6px;}
   .list-item{min-height:54px;}
 }
+/* 玩家个人面板 */
+.pp-avatar{width:64px;height:64px;margin:0 auto 6px;border:3px solid #000;border-top-color:rgba(255,255,255,.4);border-left-color:rgba(255,255,255,.4);background:linear-gradient(135deg,#8f7a5f,#4a3a2c);display:flex;align-items:center;justify-content:center;font-size:32px;image-rendering:pixelated;}
+.pp-name{font-size:17px;font-weight:bold;margin-bottom:6px;}
+.pp-badges{display:flex;gap:6px;justify-content:center;margin-bottom:10px;}
+.pp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
+.pp-stat{background:var(--t-bg2);border:1px solid var(--t-border);border-radius:8px;padding:7px 4px;text-align:center;}
+.pp-stat b{display:block;font-size:15px;color:var(--t-accent);}
+.pp-stat span{font-size:9px;color:var(--t-dim);}
+.pp-mode{display:flex;align-items:center;gap:6px;padding:7px 8px;background:var(--t-bg2);border:1px solid var(--t-border);border-radius:8px;margin-bottom:5px;font-size:12px;}
+.pp-mode-icon{font-size:15px;}
+.pp-mode-name{flex:1;font-weight:bold;}
+.pp-mode-rank{font-size:11px;color:var(--t-dim);}
+.pp-mode-score{font-weight:bold;color:var(--t-accent);min-width:34px;text-align:right;}
