@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>⚔ MC PVP 排行榜</title>
+<!--
+  Minecraft PVP 排行榜 · 单页应用（前端演示版）
+  ─────────────────────────────────────────
+  ▸ 数据存储：localStorage（键 mc_pvp_db_v1）
+  ▸ 后端对接：app.js 底部 /*** API 对接区 ***/，实现 fetch 后替换即可
+  ▸ 制作者：Operit
+-->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ════════ 顶部导航栏（5入口） ════════ -->
+  <header class="topbar" id="topbar">
+    <div class="logo px-title"><span class="sword">⚔</span>PVP榜</div>
+    <nav class="nav-btns">
+      <button class="nav-item" data-nav="theme"><span class="ic">🎨</span>主题</button>
+      <button class="nav-item" data-nav="diy"><span class="ic">🧱</span>DIY</button>
+      <button class="nav-item" data-nav="music"><span class="ic">🎵</span>音乐</button>
+      <button class="nav-item" data-nav="about"><span class="ic">📖</span>关于</button>
+      <button class="nav-item" data-nav="admin"><span class="ic">🛡️</span>管理</button>
+    </nav>
+  </header>
+
+  <!-- ════════ 内容区 ════════ -->
+  <main class="main">
+
+    <!-- 玻璃拟态滑动模式栏 -->
+    <div class="mode-bar-wrap">
+      <div class="mode-bar" id="modeBar">
+        <div class="mode-glider" id="modeGlider"></div>
+        <button class="mode-item on" data-mode="sword">⚔ 剑斗</button>
+        <button class="mode-item" data-mode="axe">🪓 盾斧</button>
+        <button class="mode-item" data-mode="diamond">💎 钻石药水</button>
+        <button class="mode-item" data-mode="alloy">🧪 合金药水</button>
+        <button class="mode-item" data-mode="hammer">🔨 重锤</button>
+        <button class="mode-item" data-mode="crystal">💠 水晶</button>
+        <button class="mode-item" data-mode="jiahao">🎭 嘉豪</button>
+        <button class="mode-item" data-mode="heart">❤ 心动</button>
+        <button class="mode-item" data-mode="total">🏆 总榜</button>
+      </div>
+    </div>
+
+    <!-- 登录/个人面板 -->
+    <section id="userPanel" class="user-panel mc-panel hidden"></section>
+
+    <!-- 榜单标题 -->
+    <div class="list-head">
+      <h2 class="px-title" id="listTitle">⚔ 剑斗模式</h2>
+      <span class="list-sub" id="listSub">段位独立计算 · 实时更新</span>
+    </div>
+
+    <!-- 榜单列表 -->
+    <div class="list-scroll" id="listWrap">
+      <div id="listContent"></div>
+      <div id="pullTip" class="pull-tip">↓ 下拉刷新</div>
+    </div>
+  </main>
+
+  <!-- 底部安全区 -->
+  <div class="safe-foot"></div>
+</div>
+
+<!-- 悬浮迷你播放条 -->
+<div id="miniPlayer" class="mini-player hidden">
+  <button id="mpBtn" class="mp-btn">▶</button>
+  <div class="mp-info"><span id="mpName">MC 轻音乐</span><span class="mp-bar"><i id="mpBar"></i></span></div>
+  <button id="mpClose" class="mp-btn">✕</button>
+</div>
+
+<!-- ════════ 弹窗容器 ════════ -->
+<div id="overlay" class="overlay hidden"></div>
+<div id="dialogRoot"></div>
+
+<!-- 粒子层 -->
+<div class="particle-layer" id="particles"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
