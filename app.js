@@ -280,7 +280,7 @@ function renderUserPanel(){
   const totalRank = rankOf('total', me.id);
   const heartCount = DB.likes.counts[me.id]||0;
   let html = '';
-  html += `<div class="up-head"><div class="up-avatar">${me.avatar||'🧑'}</div><div style="flex:1;min-width:0">
+  html += `<div class="up-head"><div class="up-avatar">${esc(me.avatar||'🧑')}</div><div style="flex:1;min-width:0">
     <div class="up-name">${esc(me.name)}</div>
     <div class="up-sub">总榜排名 #${totalRank||'-'} · 被赞 ${heartCount}</div></div>
     <button class="btn-px red sm" id="btnLogout">退出</button></div>`;
@@ -310,7 +310,11 @@ function updateGlider(btn){
 }
 function switchMode(key){
   currentMode = key;
-  $$('.mode-item').forEach(b=>b.classList.toggle('on', b.dataset.mode===key));
+  $$('.mode-item').forEach(b=>{
+    const on = b.dataset.mode===key;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false'); // ✅ 无障碍状态
+  });
   const btn = document.querySelector('.mode-item[data-mode="'+key+'"]');
   if(btn){
     btn.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
@@ -766,6 +770,8 @@ function init(){
   $$('.nav-item').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const k = btn.dataset.nav;
+      // ✅ 无障碍：记录当前激活入口
+      $$('.nav-item').forEach(b=>b.setAttribute('aria-pressed', b===btn ? 'true' : 'false'));
       if(k==='theme') openTheme();
       else if(k==='diy') openDIY();
       else if(k==='music') openMusic();
@@ -789,6 +795,9 @@ function init(){
     if(btn) updateGlider(btn);
   });
   initPullRefresh();
+  // ✅ Footer 年份自动更新
+  const fy = document.getElementById('footerYear');
+  if(fy) fy.textContent = new Date().getFullYear();
 }
 document.addEventListener('DOMContentLoaded', init);
 
