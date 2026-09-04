@@ -166,6 +166,12 @@ function renderItem(row, idx, mode){
   const rank = idx+1;
   const crown = rank===1?'👑':rank===2?'🥈':rank===3?'🥉':'';
   const rankCls = rank===1?'r1':rank===2?'r2':rank===3?'r3':'';
+  // P3：升降箭头（演示版无 prev_rank，用伪随机稳定值模拟，接入后端后替换为 p.prev_rank）
+  const prevRank = (p.prev_rank !== undefined) ? p.prev_rank : ((idx*7)%5 === 0 ? rank+2 : ((idx*3)%4===0 ? Math.max(1,rank-2) : rank));
+  const trend = prevRank > rank ? '▲' : (prevRank < rank ? '▼' : '—');
+  const trendCls = prevRank > rank ? 'up' : (prevRank < rank ? 'down' : 'flat');
+  // P3：总榜称号（≥450 战神 / ≥300 宗师 / ≥100 精英 / 其余 新秀）
+  const title = score>=450?'战神':score>=300?'宗师':score>=100?'精英':'新秀';
   const div = document.createElement('div');
   div.className = 'list-item';
   div.dataset.pid = p.id;               // 整行可点击 → 打开玩家个人面板
@@ -173,8 +179,18 @@ function renderItem(row, idx, mode){
   div.style.animationDelay = (idx*0.03)+'s';
   let html = '';
   html += '<div class="rank-no '+rankCls+'"><span class="crown">'+crown+'</span>'+rank+'</div>';
-  if(CFG.showAvatar) html += '<div class="avatar" data-avatar>'+esc(p.avatar||'🧑')+'</div>';
-  html += '<div class="p-info"><div class="p-name" data-name>'+esc(p.name)+'</div><div class="p-sub">';
+  if(CFG.showAvatar){
+    // P3：真实 MC 头像（mc-heads.net），onerror 兜底为 emoji，lazy 加载
+    html += '<div class="avatar" data-avatar>'
+      + '<img class="avatar-img" loading="lazy" width="38" height="38" '
+      + 'src="https://mc-heads.net/avatar/'+encodeURIComponent(p.name)+'/64" '
+      + 'alt="'+esc(p.name)+' 的头像" '
+      + 'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">'
+      + '<span class="avatar-fallback" style="display:none">'+esc(p.avatar||'🧑')+'</span></div>';
+  }
+  html += '<div class="p-info"><div class="p-name" data-name>'+esc(p.name)
+    + ' <span class="trend '+trendCls+'">'+trend+'</span>'
+    + ' <span class="rank-title">'+title+'</span></div><div class="p-sub">';
   if(CFG.showBadge){
     const t = tier || tierOf(score);
     html += '<span class="badge '+t.cls+'">'+t.label+'</span>';
@@ -321,6 +337,17 @@ function switchMode(key){
     setTimeout(()=>updateGlider(btn), 200);
   }
   renderList();
+  updateModeFade();
+}
+/* P3：模式栏滚动端点 → 自动隐藏对应渐隐遮罩 */
+function updateModeFade(){
+  const bar = $('#modeBar');
+  if(!bar) return;
+  const l = $('.mode-fade-l'), r = $('.mode-fade-r');
+  if(!l || !r) return;
+  const maxScroll = bar.scrollWidth - bar.clientWidth;
+  l.classList.toggle('hidden-fade', bar.scrollLeft <= 4);
+  r.classList.toggle('hidden-fade', bar.scrollLeft >= maxScroll - 4);
 }
 
 /* ── 7) 弹窗系统 ── */
@@ -328,10 +355,11 @@ let dialogCleanup = null;
 function showDialog(title, bodyHTML, opts={}){
   const overlay = $('#overlay');
   overlay.classList.remove('hidden');
+  document.body.classList.add('dialog-open');   // P0：弹窗打开时给 body 加状态类（CSS 据此暂停后台动画）
   const root = $('#dialogRoot');
   root.innerHTML = `
     <div class="dialog-wrap" id="dlgWrap">
-      <div class="dialog-box mc-dialog">
+      <div class="dialog-box mc-dialog${opts.refract ? ' glass-refract' : ''}">
         <div class="dialog-head">
           <div class="dialog-title px-title">${title}</div>
           ${opts.closeBtn!==false ? '<button class="dialog-close" id="dlgClose">✕</button>' : ''}
@@ -341,6 +369,7 @@ function showDialog(title, bodyHTML, opts={}){
     </div>`;
   const close = ()=>{
     overlay.classList.add('hidden'); root.innerHTML='';
+    document.body.classList.remove('dialog-open');   // 关闭 → 恢复后台动画
     if(dialogCleanup){ dialogCleanup(); dialogCleanup=null; }
   };
   const cbtn = $('#dlgClose');
@@ -513,7 +542,14 @@ function openAbout(){
   showDialog('📖 关于', html, {closeBtn:true});
 }
 
-/* ── 8.5) 玩家个人面板（点击榜单项打开） ── */
+/* ── 8.5) 玩家个人面板（点击榜单项打开） ──
+   v1.1 语义澄清：不再用"音乐播放器"隐喻。
+   - 进度条 → 只读胜率条（展示模式达标率，不可拖拽）
+   - 主按钮 → 「展开对战记录」（数据计数动画 + 折叠明细）
+   - ⏮/⏭ → 切换上/下一名玩家 */
+let ppListCache = [];      // 当前榜单顺序缓存（供上/下一名）
+let ppIndexCache = 0;
+
 function openPlayerPanel(pid){
   const p = DB.players[pid];
   if(!p){ toast('玩家不存在'); return; }
@@ -527,12 +563,14 @@ function openPlayerPanel(pid){
     const s = p.scores[m]||0;
     const t = tierOf(s);
     const rank = rankOf(m, pid);
+    const pct = Math.min(100, Math.round(s/1500*100));   // 只读胜率条（相对满分1500）
     modeHtml += `<div class="pp-mode">
       <span class="pp-mode-icon">${MODES[m].icon}</span>
       <span class="pp-mode-name">${MODES[m].name}</span>
       <span class="badge ${t.cls}">${t.label}</span>
       <span class="pp-mode-rank">#${rank||'-'}</span>
       <span class="pp-mode-score">${s}</span>
+      <span class="pp-winrate" data-win="${pct}"><i style="width:${pct}%"></i><em>${pct}%</em></span>
     </div>`;
   });
   // 历史记录（该玩家相关的操作日志）
@@ -541,6 +579,12 @@ function openPlayerPanel(pid){
     logsHtml += `<div class="log-line">${fmtTime(l.t)} · ${esc(l.action)} ${esc(l.detail||'')}</div>`;
   });
   if(!logsHtml) logsHtml = '<div class="log-line" style="color:var(--t-dim)">暂无操作记录</div>';
+
+  // 记录榜单顺序（用于上/下一名切换）
+  if(currentMode==='total') ppListCache = buildRank('total');
+  else if(currentMode==='heart') ppListCache = buildRank('heart');
+  else ppListCache = buildRank(currentMode);
+  ppIndexCache = Math.max(0, ppListCache.findIndex(r=>r.p.id===pid));
 
   const html = `
     <div style="text-align:center;padding:4px 0 10px">
@@ -551,19 +595,57 @@ function openPlayerPanel(pid){
         <span class="badge" style="background:linear-gradient(180deg,#ff6b81,#e0355a);color:#fff">❤ ${heartCount}</span>
       </div>
       <div class="pp-stats">
-        <div class="pp-stat"><b>${total}</b><span>总积分</span></div>
+        <div class="pp-stat"><b data-count>${total}</b><span>总积分</span></div>
         <div class="pp-stat"><b>#${totalRank||'-'}</b><span>总榜排名</span></div>
         <div class="pp-stat"><b>${heartCount}</b><span>被点赞</span></div>
       </div>
+      <!-- v1.1 语义澄清：主按钮 → 展开对战记录（非播放） -->
+      <div class="pp-actions">
+        <button class="btn-px blue sm" id="ppPrev">⏮ 上一位</button>
+        <button class="btn-px gold sm" id="ppToggle">📊 展开战绩</button>
+        <button class="btn-px blue sm" id="ppNext">下一位 ⏭</button>
+      </div>
     </div>
-    <div style="font-size:12px;font-weight:bold;margin:8px 0 4px;color:var(--t-accent)">⚔ 各模式战绩（独立段位）</div>
-    ${modeHtml}
-    <div style="font-size:12px;font-weight:bold;margin:10px 0 4px;color:var(--t-accent)">📋 最近操作</div>
-    ${logsHtml}
+    <div id="ppDetail" class="pp-detail">
+      <div style="font-size:12px;font-weight:bold;margin:8px 0 4px;color:var(--t-accent)">⚔ 各模式战绩（独立段位 · 胜率条只读）</div>
+      ${modeHtml}
+      <div style="font-size:12px;font-weight:bold;margin:10px 0 4px;color:var(--t-accent)">📋 最近操作</div>
+      ${logsHtml}
+    </div>
   `;
-  // 登录用户查看自己时显示"这是你"
   const isMe = session && session.pid === pid;
   showDialog(isMe ? '👤 我的个人面板' : '👤 玩家档案', html, {closeBtn:true});
+  // 主按钮：数据计数动画 + 折叠展开
+  $('#ppToggle').onclick = function(){
+    const d = $('#ppDetail');
+    const collapsed = d.classList.toggle('collapsed');
+    this.textContent = collapsed ? '📊 展开战绩' : '📉 收起战绩';
+    if(!collapsed){ runCountUp(); }
+  };
+  // 上一位/下一位
+  $('#ppPrev').onclick = ()=>{
+    if(ppListCache.length<=1){ toast('没有更多玩家'); return; }
+    const prev = ppListCache[(ppIndexCache-1+ppListCache.length)%ppListCache.length];
+    closeDialog(); openPlayerPanel(prev.p.id);
+  };
+  $('#ppNext').onclick = ()=>{
+    if(ppListCache.length<=1){ toast('没有更多玩家'); return; }
+    const next = ppListCache[(ppIndexCache+1)%ppListCache.length];
+    closeDialog(); openPlayerPanel(next.p.id);
+  };
+}
+/* 数据计数动画：从 0 滚动到目标值 */
+function runCountUp(){
+  const el = document.querySelector('[data-count]');
+  if(!el) return;
+  const target = parseInt(el.textContent)||0;
+  const dur = 700, t0 = performance.now();
+  function tick(t){
+    const k = Math.min(1,(t-t0)/dur);
+    el.textContent = Math.round(target*(1-Math.pow(1-k,3)));  // easeOutCubic
+    if(k<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 /* ── 9) 点赞交互（心动榜） ── */
@@ -766,6 +848,9 @@ function init(){
   $$('.mode-item').forEach(btn=>{
     btn.addEventListener('click', ()=>switchMode(btn.dataset.mode));
   });
+  // P3：模式栏横向滚动 → 实时更新渐隐遮罩
+  $('#modeBar').addEventListener('scroll', updateModeFade, {passive:true});
+  updateModeFade();
   // 顶部导航
   $$('.nav-item').forEach(btn=>{
     btn.addEventListener('click', ()=>{
