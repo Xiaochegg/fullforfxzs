@@ -50,7 +50,13 @@
   <!-- ════════ 内容区 ════════ -->
   <main class="main" id="mainContent">
 
-    <!-- 玻璃拟态滑动模式栏 -->
+    <!-- 下拉刷新指示器（顶部固定，意图闸门专用） -->
+    <div id="ptrIndicator" class="ptr-indicator" aria-hidden="true">
+      <span class="ptr-ring" id="ptrRing"></span>
+      <span class="ptr-text" id="ptrText">下拉刷新</span>
+    </div>
+
+    <!-- 玻璃拟态滑动模式栏（外层容器持玻璃外观 + overflow:hidden） -->
     <div class="mode-bar-wrap" id="modeBarWrap">
       <div class="mode-bar" id="modeBar" role="tablist" aria-label="排行榜模式切换">
         <div class="mode-glider" id="modeGlider" aria-hidden="true"></div>
@@ -64,9 +70,6 @@
         <button class="mode-item" data-mode="heart" role="tab" aria-selected="false">❤ 心动</button>
         <button class="mode-item" data-mode="total" role="tab" aria-selected="false">🏆 总榜</button>
       </div>
-      <!-- P3：左右渐隐遮罩（提示可横向滑动，滚动到端点自动隐藏） -->
-      <div class="mode-fade mode-fade-l" aria-hidden="true"></div>
-      <div class="mode-fade mode-fade-r" aria-hidden="true"></div>
     </div>
 
     <!-- 登录/个人面板 -->
@@ -81,7 +84,7 @@
     <!-- 榜单列表 -->
     <div class="list-scroll" id="listWrap">
       <div id="listContent"></div>
-      <div id="pullTip" class="pull-tip">↓ 下拉刷新</div>
+      <div id="pullTip" class="pull-tip">顶部用力下拉可刷新</div>
     </div>
   </main>
 
