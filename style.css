@@ -23,6 +23,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 input,select{font-family:inherit;}
 .hidden{display:none !important;}
 .px-title{text-shadow:2px 2px 0 rgba(0,0,0,.6),-1px -1px 0 rgba(255,255,255,.08);letter-spacing:1px;}
+/* ── MC 原版物品图标（真实 PNG，替换 emoji） ── */
+.mc-ic{display:inline-block;vertical-align:-3px;image-rendering:pixelated;object-fit:contain;pointer-events:none;user-select:none;}
+.ic-logo{width:22px;height:22px;filter:drop-shadow(0 0 6px var(--t-accent));}
+.ic-nav{width:18px;height:18px;}
+.ic-tab{width:17px;height:17px;margin-right:4px;vertical-align:-3px;}
+.ic-md{width:18px;height:18px;vertical-align:-3px;}
+.ic-sm{width:15px;height:15px;vertical-align:-2px;}
+.ic-xs{width:13px;height:13px;vertical-align:-2px;}
+.ic-big{width:56px;height:56px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5));}
+.ic-dlg{width:20px;height:20px;vertical-align:-4px;margin-right:2px;filter:drop-shadow(0 0 4px var(--t-accent));}
+.crown-ic{width:14px;height:14px;vertical-align:-2px;filter:drop-shadow(0 0 4px rgba(255,213,79,.9));}
+.like-ic{width:18px;height:18px;vertical-align:-2px;}
+.pp-mode-icon img{width:15px;height:15px;vertical-align:-2px;}
 .btn-px{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(180deg,#8b8b9c,#6f6f80 45%,#5a5a6b);color:#fff;padding:10px 16px;font-weight:bold;font-size:14px;border:2px solid #000;border-top-color:#d8d8e0;border-left-color:#d8d8e0;box-shadow:0 4px 0 #000,inset 0 1px 0 rgba(255,255,255,.35);user-select:none;transition:transform .05s,box-shadow .05s,filter .2s;}
 .btn-px:active{transform:translateY(3px);box-shadow:0 1px 0 #000;}
 .btn-px.green{background:linear-gradient(180deg,#6cbe4f,#4e9b34 45%,#3c7f27);}
@@ -44,7 +57,7 @@ input,select{font-family:inherit;}
 .badge-LT4{background:linear-gradient(180deg,#7bc5ff,#3f9fe0 55%,#1f6fa0);color:#fff;}
 .badge-LT5{background:linear-gradient(180deg,#b8b8b8,#8a8a8a 55%,#5f5f5f);color:#fff;}
 .particle-layer{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;}
-.particle{position:absolute;font-size:14px;animation:particleFly .9s ease-out forwards;will-change:transform,opacity;}
+.particle{position:absolute;width:18px;height:18px;image-rendering:pixelated;animation:particleFly .9s ease-out forwards;will-change:transform,opacity;}
 @keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.4) rotate(var(--rot));opacity:0}}
 .like-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;border:2px solid #000;background:linear-gradient(180deg,#7c7c8c,#5c5c6c);transition:transform .1s;user-select:none;flex-shrink:0;}
 .like-btn:active{transform:scale(.85);}
