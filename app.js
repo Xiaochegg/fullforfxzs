@@ -168,11 +168,13 @@ function renderItem(row, idx, mode){
   const rankCls = rank===1?'r1':rank===2?'r2':rank===3?'r3':'';
   const div = document.createElement('div');
   div.className = 'list-item';
+  div.dataset.pid = p.id;               // 整行可点击 → 打开玩家个人面板
+  div.style.cursor = 'pointer';
   div.style.animationDelay = (idx*0.03)+'s';
   let html = '';
   html += '<div class="rank-no '+rankCls+'"><span class="crown">'+crown+'</span>'+rank+'</div>';
-  if(CFG.showAvatar) html += '<div class="avatar">'+(p.avatar||'🧑')+'</div>';
-  html += '<div class="p-info"><div class="p-name">'+esc(p.name)+'</div><div class="p-sub">';
+  if(CFG.showAvatar) html += '<div class="avatar" data-avatar>'+esc(p.avatar||'🧑')+'</div>';
+  html += '<div class="p-info"><div class="p-name" data-name>'+esc(p.name)+'</div><div class="p-sub">';
   if(CFG.showBadge){
     const t = tier || tierOf(score);
     html += '<span class="badge '+t.cls+'">'+t.label+'</span>';
@@ -507,6 +509,59 @@ function openAbout(){
   showDialog('📖 关于', html, {closeBtn:true});
 }
 
+/* ── 8.5) 玩家个人面板（点击榜单项打开） ── */
+function openPlayerPanel(pid){
+  const p = DB.players[pid];
+  if(!p){ toast('玩家不存在'); return; }
+  const total = getTotalScore(p);
+  const totalRank = rankOf('total', pid);
+  const heartCount = DB.likes.counts[pid]||0;
+  // 各模式积分 + 独立段位
+  let modeHtml = '';
+  MODE_KEYS.forEach(m=>{
+    if(m==='heart') return;
+    const s = p.scores[m]||0;
+    const t = tierOf(s);
+    const rank = rankOf(m, pid);
+    modeHtml += `<div class="pp-mode">
+      <span class="pp-mode-icon">${MODES[m].icon}</span>
+      <span class="pp-mode-name">${MODES[m].name}</span>
+      <span class="badge ${t.cls}">${t.label}</span>
+      <span class="pp-mode-rank">#${rank||'-'}</span>
+      <span class="pp-mode-score">${s}</span>
+    </div>`;
+  });
+  // 历史记录（该玩家相关的操作日志）
+  let logsHtml = '';
+  DB.logs.filter(l=> l.detail && l.detail.indexOf(p.name)>=0).slice(0,6).forEach(l=>{
+    logsHtml += `<div class="log-line">${fmtTime(l.t)} · ${esc(l.action)} ${esc(l.detail||'')}</div>`;
+  });
+  if(!logsHtml) logsHtml = '<div class="log-line" style="color:var(--t-dim)">暂无操作记录</div>';
+
+  const html = `
+    <div style="text-align:center;padding:4px 0 10px">
+      <div class="pp-avatar">${esc(p.avatar||'🧑')}</div>
+      <div class="pp-name px-title">${esc(p.name)}</div>
+      <div class="pp-badges">
+        <span class="badge ${tierOf(total).cls}">总段位 ${tierOf(total).label}</span>
+        <span class="badge" style="background:linear-gradient(180deg,#ff6b81,#e0355a);color:#fff">❤ ${heartCount}</span>
+      </div>
+      <div class="pp-stats">
+        <div class="pp-stat"><b>${total}</b><span>总积分</span></div>
+        <div class="pp-stat"><b>#${totalRank||'-'}</b><span>总榜排名</span></div>
+        <div class="pp-stat"><b>${heartCount}</b><span>被点赞</span></div>
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:bold;margin:8px 0 4px;color:var(--t-accent)">⚔ 各模式战绩（独立段位）</div>
+    ${modeHtml}
+    <div style="font-size:12px;font-weight:bold;margin:10px 0 4px;color:var(--t-accent)">📋 最近操作</div>
+    ${logsHtml}
+  `;
+  // 登录用户查看自己时显示"这是你"
+  const isMe = session && session.pid === pid;
+  showDialog(isMe ? '👤 我的个人面板' : '👤 玩家档案', html, {closeBtn:true});
+}
+
 /* ── 9) 点赞交互（心动榜） ── */
 function handleLike(pid, btn){
   if(!session){ toast('请先登录后再点赞 ❤'); openAuth(); return; }
@@ -718,10 +773,12 @@ function init(){
       else if(k==='admin') openAdmin();
     });
   });
-  // 点赞事件委托
+  // 点击事件委托：点赞按钮优先，否则打开玩家个人面板
   $('#listContent').addEventListener('click', e=>{
-    const btn = e.target.closest('[data-like]');
-    if(btn) handleLike(btn.dataset.like, btn);
+    const likeBtn = e.target.closest('[data-like]');
+    if(likeBtn){ handleLike(likeBtn.dataset.like, likeBtn); return; }
+    const item = e.target.closest('[data-pid]');
+    if(item) openPlayerPanel(item.dataset.pid);
   });
   // 迷你播放条
   $('#mpBtn').onclick = ()=>{ toggleMusic(); $('#mpBtn').textContent = musicPlaying?'⏸':'▶'; };
