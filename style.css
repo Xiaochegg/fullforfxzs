@@ -169,3 +169,8 @@ input,select{font-family:inherit;}
 .pp-mode-name{flex:1;font-weight:bold;}
 .pp-mode-rank{font-size:11px;color:var(--t-dim);}
 .pp-mode-score{font-weight:bold;color:var(--t-accent);min-width:34px;text-align:right;}
+/* 页脚 */
+.site-footer{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 12px calc(10px + var(--t-safe));font-size:10px;color:var(--t-dim);text-align:center;border-top:2px solid var(--t-border);background:var(--t-panel);backdrop-filter:blur(var(--t-blur));-webkit-backdrop-filter:blur(var(--t-blur));}
+.site-footer span{line-height:1.5;}
+/* 统一 emoji 尺寸，减少跨平台渲染差异 */
+.ic,.mode-item,.avatar,.pp-avatar,.crown,.like-btn,.mp-btn{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;}
