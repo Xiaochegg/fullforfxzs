@@ -131,6 +131,7 @@ body::after{
 .rank-no{ transition:transform var(--d-mid) var(--e-spring); }
 .list-item:hover .rank-no{ transform:scale(1.15); }
 .crown{ display:inline-block; animation:crownBob 2.4s var(--e-inout) infinite; }
+.crown-ic{ display:inline-block; animation:crownBob 2.4s var(--e-inout) infinite; transform-origin:50% 100%; }
 @keyframes crownBob{ 0%,100%{transform:translateY(0) rotate(-6deg)} 50%{transform:translateY(-3px) rotate(6deg)} }
 .p-score b{ transition:color var(--d-mid) var(--e-glass); }
 
