@@ -2,13 +2,29 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<title>⚔ MC PVP 排行榜</title>
+<!-- ✅ 允许缩放：移除 user-scalable=no，符合 WCAG 无障碍标准 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>⚔ MC PVP 排行榜 - Minecraft 剑斗/盾斧/药水/水晶多模式对战榜单</title>
+<!-- ===== SEO Meta ===== -->
+<meta name="description" content="Minecraft PVP 排行榜：剑斗、盾斧、钻石药水、合金药水、重锤、水晶、嘉豪、心动八大独立模式，HT/LT 五级段位体系，总榜积分汇总，心动榜每日点赞。">
+<meta name="keywords" content="Minecraft,我的世界,PVP,排行榜,剑斗,盾斧,钻石药水,合金药水,重锤,水晶,段位,心动榜">
+<meta name="author" content="Operit">
+<meta name="robots" content="index,follow">
+<!-- ===== Open Graph 社交分享卡片 ===== -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="⚔ MC PVP 排行榜">
+<meta property="og:description" content="八大独立 PVP 模式 · HT/LT 五级段位 · 心动每日点赞，快来查看你的排名！">
+<meta property="og:site_name" content="MC PVP 排行榜">
+<meta property="og:url" content="https://xiaochegg.github.io/fullforfxzs/">
+<meta property="og:image" content="https://xiaochegg.github.io/fullforfxzs/og-cover.png">
+<!-- ===== 主题色 / PWA 基础 ===== -->
+<meta name="theme-color" content="#14141c">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
 <!--
   Minecraft PVP 排行榜 · 单页应用（前端演示版）
   ─────────────────────────────────────────
   ▸ 数据存储：localStorage（键 mc_pvp_db_v1）
-  ▸ 后端对接：app.js 底部 /*** API 对接区 ***/，实现 fetch 后替换即可
+  ▸ 后端对接：app.js 底部 API 对接区，实现 fetch 后替换即可
   ▸ 制作者：Operit
 -->
 <link rel="stylesheet" href="style.css">
@@ -18,37 +34,38 @@
 
   <!-- ════════ 顶部导航栏（5入口） ════════ -->
   <header class="topbar" id="topbar">
-    <div class="logo px-title"><span class="sword">⚔</span>PVP榜</div>
-    <nav class="nav-btns">
-      <button class="nav-item" data-nav="theme"><span class="ic">🎨</span>主题</button>
-      <button class="nav-item" data-nav="diy"><span class="ic">🧱</span>DIY</button>
-      <button class="nav-item" data-nav="music"><span class="ic">🎵</span>音乐</button>
-      <button class="nav-item" data-nav="about"><span class="ic">📖</span>关于</button>
-      <button class="nav-item" data-nav="admin"><span class="ic">🛡️</span>管理</button>
+    <!-- ✅ h1：页面唯一主标题（SEO + 读屏） -->
+    <h1 class="logo px-title"><span class="sword" aria-hidden="true">⚔</span>PVP榜</h1>
+    <nav class="nav-btns" aria-label="功能导航">
+      <button class="nav-item" data-nav="theme" aria-pressed="false"><span class="ic" aria-hidden="true">🎨</span>主题</button>
+      <button class="nav-item" data-nav="diy" aria-pressed="false"><span class="ic" aria-hidden="true">🧱</span>DIY</button>
+      <button class="nav-item" data-nav="music" aria-pressed="false"><span class="ic" aria-hidden="true">🎵</span>音乐</button>
+      <button class="nav-item" data-nav="about" aria-pressed="false"><span class="ic" aria-hidden="true">📖</span>关于</button>
+      <button class="nav-item" data-nav="admin" aria-pressed="false"><span class="ic" aria-hidden="true">🛡️</span>管理</button>
     </nav>
   </header>
 
   <!-- ════════ 内容区 ════════ -->
-  <main class="main">
+  <main class="main" id="mainContent">
 
     <!-- 玻璃拟态滑动模式栏 -->
     <div class="mode-bar-wrap">
-      <div class="mode-bar" id="modeBar">
-        <div class="mode-glider" id="modeGlider"></div>
-        <button class="mode-item on" data-mode="sword">⚔ 剑斗</button>
-        <button class="mode-item" data-mode="axe">🪓 盾斧</button>
-        <button class="mode-item" data-mode="diamond">💎 钻石药水</button>
-        <button class="mode-item" data-mode="alloy">🧪 合金药水</button>
-        <button class="mode-item" data-mode="hammer">🔨 重锤</button>
-        <button class="mode-item" data-mode="crystal">💠 水晶</button>
-        <button class="mode-item" data-mode="jiahao">🎭 嘉豪</button>
-        <button class="mode-item" data-mode="heart">❤ 心动</button>
-        <button class="mode-item" data-mode="total">🏆 总榜</button>
+      <div class="mode-bar" id="modeBar" role="tablist" aria-label="排行榜模式切换">
+        <div class="mode-glider" id="modeGlider" aria-hidden="true"></div>
+        <button class="mode-item on" data-mode="sword" role="tab" aria-selected="true">⚔ 剑斗</button>
+        <button class="mode-item" data-mode="axe" role="tab" aria-selected="false">🪓 盾斧</button>
+        <button class="mode-item" data-mode="diamond" role="tab" aria-selected="false">💎 钻石药水</button>
+        <button class="mode-item" data-mode="alloy" role="tab" aria-selected="false">🧪 合金药水</button>
+        <button class="mode-item" data-mode="hammer" role="tab" aria-selected="false">🔨 重锤</button>
+        <button class="mode-item" data-mode="crystal" role="tab" aria-selected="false">💠 水晶</button>
+        <button class="mode-item" data-mode="jiahao" role="tab" aria-selected="false">🎭 嘉豪</button>
+        <button class="mode-item" data-mode="heart" role="tab" aria-selected="false">❤ 心动</button>
+        <button class="mode-item" data-mode="total" role="tab" aria-selected="false">🏆 总榜</button>
       </div>
     </div>
 
     <!-- 登录/个人面板 -->
-    <section id="userPanel" class="user-panel mc-panel hidden"></section>
+    <section id="userPanel" class="user-panel mc-panel hidden" aria-live="polite"></section>
 
     <!-- 榜单标题 -->
     <div class="list-head">
@@ -63,15 +80,21 @@
     </div>
   </main>
 
+  <!-- ✅ Footer：版权/版本/备案 -->
+  <footer class="site-footer">
+    <span>⚔ MC PVP 排行榜 v1.1.0</span>
+    <span>© <span id="footerYear">2026</span> Operit · 前端演示版 · 数据存于本机</span>
+  </footer>
+
   <!-- 底部安全区 -->
   <div class="safe-foot"></div>
 </div>
 
 <!-- 悬浮迷你播放条 -->
-<div id="miniPlayer" class="mini-player hidden">
-  <button id="mpBtn" class="mp-btn">▶</button>
+<div id="miniPlayer" class="mini-player hidden" role="region" aria-label="音乐播放条">
+  <button id="mpBtn" class="mp-btn" aria-label="播放/暂停">▶</button>
   <div class="mp-info"><span id="mpName">MC 轻音乐</span><span class="mp-bar"><i id="mpBar"></i></span></div>
-  <button id="mpClose" class="mp-btn">✕</button>
+  <button id="mpClose" class="mp-btn" aria-label="关闭播放条">✕</button>
 </div>
 
 <!-- ════════ 弹窗容器 ════════ -->
@@ -79,7 +102,7 @@
 <div id="dialogRoot"></div>
 
 <!-- 粒子层 -->
-<div class="particle-layer" id="particles"></div>
+<div class="particle-layer" id="particles" aria-hidden="true"></div>
 
 <script src="app.js"></script>
 </body>
