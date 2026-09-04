@@ -7,15 +7,45 @@
 
 /* ── 1) 常量定义 ── */
 const MODES = {
-  sword:   { name: '剑斗',      icon: '⚔',  inTotal: true,  desc: '剑术对决' },
-  axe:     { name: '盾斧',      icon: '🪓',  inTotal: true,  desc: '盾斧攻防' },
-  diamond: { name: '钻石药水',  icon: '💎',  inTotal: true,  desc: '钻石附魔药水战' },
-  alloy:   { name: '合金药水',  icon: '🧪',  inTotal: true,  desc: '合金强化药水战' },
-  hammer:  { name: '重锤',      icon: '🔨',  inTotal: true,  desc: '重锤粉碎' },
-  crystal: { name: '水晶',      icon: '💠',  inTotal: true,  desc: '水晶爆破' },
-  jiahao:  { name: '嘉豪',      icon: '🎭',  inTotal: false, desc: '娱乐模式·不计总分' },
-  heart:   { name: '心动',      icon: '❤',  inTotal: false, desc: '点赞榜·不影响积分' }
+  sword:   { name: '剑斗',      icon: 'sword',   inTotal: true,  desc: '剑术对决' },
+  axe:     { name: '盾斧',      icon: 'axe',     inTotal: true,  desc: '盾斧攻防' },
+  diamond: { name: '钻石药水',  icon: 'diamond', inTotal: true,  desc: '钻石附魔药水战' },
+  alloy:   { name: '合金药水',  icon: 'alloy',   inTotal: true,  desc: '合金强化药水战' },
+  hammer:  { name: '重锤',      icon: 'hammer',  inTotal: true,  desc: '重锤粉碎' },
+  crystal: { name: '水晶',      icon: 'crystal', inTotal: true,  desc: '水晶爆破' },
+  jiahao:  { name: '嘉豪',      icon: 'jiahao',  inTotal: false, desc: '娱乐模式·不计总分' },
+  heart:   { name: '心动',      icon: 'heart',   inTotal: false, desc: '点赞榜·不影响积分' }
 };
+
+/* ── 1.1) 真实 MC 物品图标映射（原版贴图 PNG，替换 emoji） ──
+   素材来源：Minecraft 官方 Java 版贴图 + Minecraft Wiki Invicon（透明背景）
+   本地路径：assets/items/*.png（16x16 原版贴图已放大到 128x128 保真） */
+const ICON = {
+  sword:   'assets/items/sword.png',          // 钻石剑
+  axe:     'assets/items/axe.png',            // 钻石斧
+  diamond: 'assets/items/potion_diamond.png', // 钻石药水 → 水肺药水（深蓝）
+  alloy:   'assets/items/potion_alloy.png',   // 合金药水 → 力量药水（橙金）
+  hammer:  'assets/items/hammer.png',         // 重锤 → 狼牙棒 Mace
+  crystal: 'assets/items/crystal.png',        // 水晶 → 末影水晶
+  jiahao:  'assets/items/jiahao.png',         // 嘉豪 → 龙头
+  heart:   'assets/items/heart.png',          // 心动 → 爱心
+  heartEmpty:'assets/items/heart_empty.png',  // 未点赞爱心（空心）
+  total:   'assets/items/total.png',          // 总榜 → 下界之星
+  crown:   'assets/items/crown.png',          // 第1名皇冠 → 金头盔
+  crownSilver:'assets/items/crown_silver.png',// 第2名 → 铁头盔
+  crownBronze:'assets/items/crown_bronze.png',// 第3名 → 皮革头盔
+  theme:   'assets/items/theme.png',          // 主题 → 画
+  diy:     'assets/items/diy.png',            // DIY → 工作台
+  music:   'assets/items/music.png',          // 音乐 → 音乐唱片
+  musicPlay:'assets/items/music_play.png',   // 播放中 → 音符盒
+  about:   'assets/items/about.png',          // 关于 → 成书
+  admin:   'assets/items/admin.png'           // 管理 → 命令方块
+};
+/* 生成模式/功能图标 HTML（img 像素风） */
+function mcIcon(key, cls){
+  const src = ICON[key] || ICON.sword;
+  return '<img class="mc-ic '+(cls||'')+'" src="'+src+'" alt="" aria-hidden="true">';
+}
 const MODE_KEYS = Object.keys(MODES);
 const TOTAL_KEY = 'total'; // 虚拟总榜
 
@@ -137,20 +167,22 @@ function hashPwd(p){ // 简单演示哈希（非安全，仅供演示）
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-/* 粒子爆裂特效 */
-function burstParticles(x, y, emoji){
+/* 粒子爆裂特效：使用 MC 物品图片小图标 */
+function burstParticles(x, y, key){
   const layer = $('#particles');
-  const emojis = emoji || ['❤','💛','💚','💙','✨','⭐','💥'];
+  const keys = key ? [key] : ['heart','heart','crystal','sword','heart','crystal','sword','heart'];
   for(let i=0;i<12;i++){
-    const el = document.createElement('span');
+    const el = document.createElement('img');
     el.className = 'particle';
-    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    const k = keys[Math.floor(Math.random()*keys.length)];
+    el.src = ICON[k] || ICON.heart;
     el.style.left = x+'px'; el.style.top = y+'px';
     const ang = Math.random()*Math.PI*2, dist = 40+Math.random()*70;
     el.style.setProperty('--dx', Math.cos(ang)*dist+'px');
     el.style.setProperty('--dy', (Math.sin(ang)*dist-30)+'px');
     el.style.setProperty('--rot', (Math.random()*360-180)+'deg');
-    el.style.fontSize = (10+Math.random()*14)+'px';
+    el.style.width = (12+Math.random()*10)+'px';
+    el.style.height = 'auto';
     layer.appendChild(el);
     setTimeout(()=>el.remove(), 950);
   }
@@ -164,7 +196,7 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;
 function renderItem(row, idx, mode){
   const {p, score, tier} = row;
   const rank = idx+1;
-  const crown = rank===1?'👑':rank===2?'🥈':rank===3?'🥉':'';
+  const crown = rank===1?mcIcon('crown','crown-ic'):rank===2?mcIcon('crownSilver','crown-ic'):rank===3?mcIcon('crownBronze','crown-ic'):'';
   const rankCls = rank===1?'r1':rank===2?'r2':rank===3?'r3':'';
   // P3：升降箭头（演示版无 prev_rank，用伪随机稳定值模拟，接入后端后替换为 p.prev_rank）
   const prevRank = (p.prev_rank !== undefined) ? p.prev_rank : ((idx*7)%5 === 0 ? rank+2 : ((idx*3)%4===0 ? Math.max(1,rank-2) : rank));
@@ -197,7 +229,7 @@ function renderItem(row, idx, mode){
   }
   if(mode === 'heart'){
     const totalRank = rankOf('total', p.id);
-    html += '<span>❤ '+(score||0)+'</span><span>总榜 #'+(totalRank||'-')+'</span>';
+    html += '<span>'+mcIcon('heart','ic-sm')+' '+(score||0)+'</span><span>总榜 #'+(totalRank||'-')+'</span>';
   } else if(mode === 'total'){
     html += '<span>6模式合计</span>';
   } else {
@@ -206,14 +238,15 @@ function renderItem(row, idx, mode){
   html += '</div></div>';
   if(CFG.showScore){
     if(mode === 'heart'){
-      html += '<div class="heart-col"><div class="heart-num">'+(score||0)+'</div><div style="font-size:9px;color:var(--t-dim)">❤点赞</div></div>';
+      html += '<div class="heart-col"><div class="heart-num">'+(score||0)+'</div><div style="font-size:9px;color:var(--t-dim)">'+mcIcon('heart','ic-sm')+' 点赞</div></div>';
     } else {
       html += '<div class="p-score"><b>'+score+'</b><span>积分</span></div>';
     }
   }
   if(mode === 'heart'){
     const liked = session && (DB.likes.used[session.pid]||0) > 0;
-    html += '<button class="like-btn '+(liked?'liked':'')+'" data-like="'+p.id+'" '+(session?'':'disabled')+'>'+(liked?'💖':'🤍')+'</button>';
+    html += '<button class="like-btn '+(liked?'liked':'')+'" data-like="'+p.id+'" '+(session?'':'disabled')+'>'
+      + mcIcon(liked?'heart':'heartEmpty','like-ic')+'</button>';
   }
   div.innerHTML = html;
   return div;
@@ -231,17 +264,17 @@ function renderList(){
   rows.forEach((r,i)=>{ frag.appendChild(renderItem(r, i, currentMode)); });
   wrap.appendChild(frag);
   let title='', sub='';
-  if(currentMode==='total'){ title='🏆 总榜'; sub='除嘉豪/心动外 · 积分汇总'; }
-  else if(currentMode==='heart'){ title='❤ 心动榜'; sub='按点赞排序 · 每日限10赞'; }
-  else { title = MODES[currentMode].icon+' '+MODES[currentMode].name; sub = MODES[currentMode].desc+' · 段位独立计算'; }
-  $('#listTitle').textContent = title;
+  if(currentMode==='total'){ title=mcIcon('total','ic-md')+' 总榜'; sub='除嘉豪/心动外 · 积分汇总'; }
+  else if(currentMode==='heart'){ title=mcIcon('heart','ic-md')+' 心动榜'; sub='按点赞排序 · 每日限10赞'; }
+  else { title = mcIcon(currentMode,'ic-md')+' '+MODES[currentMode].name; sub = MODES[currentMode].desc+' · 段位独立计算'; }
+  $('#listTitle').innerHTML = title;
   $('#listSub').textContent = sub;
   if(!rows.length){ wrap.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--t-dim)">暂无玩家，快去后台添加吧</div>'; }
 }
 
 /* ── 5) 登录系统 ── */
 function openAuth(){
-  showDialog('玩家登录', `
+  showDialog(mcIcon('admin','ic-dlg')+' 玩家登录', `
     <div class="row"><label>游戏ID</label><input class="inp-px" id="authName" placeholder="输入游戏ID"></div>
     <div class="row"><label>密码</label><input class="inp-px" id="authPwd" type="password" placeholder="输入密码"></div>
     <div style="display:flex;gap:8px;margin-top:4px">
@@ -287,7 +320,7 @@ function renderUserPanel(){
   const me = session && DB.players[session.pid];
   if(!me){
     el.classList.remove('hidden');
-    el.innerHTML = `<button class="btn-px blue" id="btnAuth" style="width:100%">👤 登录 / 注册</button>`;
+    el.innerHTML = `<button class="btn-px blue" id="btnAuth" style="width:100%">${mcIcon('admin','ic-xs')} 登录 / 注册</button>`;
     $('#btnAuth').onclick = openAuth;
     return;
   }
@@ -410,8 +443,8 @@ function openTheme(){
     html += `<button class="theme-cell${on}" data-theme-k="${k}">
       <span class="swatch" style="background:${t.bg};color:${t.fg}">⬛</span>${t.name}</button>`;
   });
-  html += '</div><div style="font-size:11px;color:var(--t-dim)">切换主题时全站配色平滑过渡 ✨</div>';
-  showDialog('🎨 主题切换', html, {closeBtn:true});
+  html += '</div><div style="font-size:11px;color:var(--t-dim)">切换主题时全站配色平滑过渡</div>';
+  showDialog(mcIcon('theme','ic-dlg')+' 主题切换', html, {closeBtn:true});
   $$('.theme-cell').forEach(b=>{
     b.onclick = ()=>{
       CFG.theme = b.dataset.themeK;
@@ -436,7 +469,7 @@ function openDIY(){
   mkSwitch('showScore','积分列');
   html += `<div class="diy-row"><span class="lbl">面板圆角 ${CFG.radius}px</span><input type="range" min="4" max="24" value="${CFG.radius}" id="rRadius" style="flex:1;max-width:140px"></div>`;
   html += `<div class="diy-row"><span class="lbl">玻璃强度 ${CFG.blur}px</span><input type="range" min="2" max="30" value="${CFG.blur}" id="rBlur" style="flex:1;max-width:140px"></div>`;
-  showDialog('🧱 DIY 布局', html, {closeBtn:true});
+  showDialog(mcIcon('diy','ic-dlg')+' DIY 布局', html, {closeBtn:true});
   $('#segDensity').querySelectorAll('button').forEach(b=>{
     b.onclick = ()=>{ CFG.density=b.dataset.d; saveCfg(); applyCfg(); $('#segDensity').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); };
   });
@@ -455,18 +488,18 @@ function openDIY(){
 let audioCtx=null, musicGain=null, musicTimer=null, musicPlaying=false;
 function openMusic(){
   let html = `<div style="text-align:center;padding:6px 0">
-    <div style="font-size:40px;margin-bottom:8px">🎵</div>
+    <div style="font-size:40px;margin-bottom:8px">${mcIcon('music','ic-big')}</div>
     <div style="font-weight:bold;margin-bottom:4px">MC 像素轻音乐（WebAudio 合成）</div>
     <div style="font-size:11px;color:var(--t-dim);margin-bottom:12px">C418 风格 · 本地合成 · 无需网络 · 版权安全</div>
-    <button class="btn-px gold" id="musicToggle" style="width:100%">${musicPlaying?'⏸ 暂停':'▶ 播放'}</button>
+    <button class="btn-px gold" id="musicToggle" style="width:100%">${musicPlaying?'暂停':'播放'}</button>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn-px blue sm" id="musicVolDown">🔉 小</button>
-      <button class="btn-px blue sm" id="musicVolUp">🔊 大</button>
+      <button class="btn-px blue sm" id="musicVolDown">音量 -</button>
+      <button class="btn-px blue sm" id="musicVolUp">音量 +</button>
     </div>
     <div style="font-size:10px;color:var(--t-dim);margin-top:10px">提示：如需上传本地音频，可在 index.html 中配置 &lt;audio&gt; 标签对接。</div>
   </div>`;
-  showDialog('🎵 音乐播放器', html, {closeBtn:true});
-  $('#musicToggle').onclick = ()=>{ toggleMusic(); $('#musicToggle').textContent = musicPlaying?'⏸ 暂停':'▶ 播放'; };
+  showDialog(mcIcon('music','ic-dlg')+' 音乐播放器', html, {closeBtn:true});
+  $('#musicToggle').onclick = ()=>{ toggleMusic(); $('#musicToggle').textContent = musicPlaying?'暂停':'播放'; };
   $('#musicVolDown').onclick = ()=>{ if(musicGain) musicGain.gain.value = Math.max(0, (musicGain.gain.value||0.15)-0.05); };
   $('#musicVolUp').onclick = ()=>{ if(musicGain) musicGain.gain.value = Math.min(1, (musicGain.gain.value||0.15)+0.05); };
 }
@@ -483,7 +516,7 @@ function startMusic(){
     musicGain.connect(audioCtx.destination);
     musicPlaying = true;
     $('#miniPlayer').classList.remove('hidden');
-    $('#mpBtn').textContent = '⏸';
+    $('#mpBtn').innerHTML = mcIcon('musicPlay','ic-sm');
     // 启动旋律循环
     scheduleMelody();
   }catch(e){ toast('音乐初始化失败：'+e.message); }
@@ -524,11 +557,11 @@ function playNote(midi, t, dur, type, vol){
 /* 8.4 关于 */
 function openAbout(){
   const html = `<div style="text-align:center;padding:4px 0">
-    <div style="font-size:44px;margin-bottom:6px">⚔️</div>
+    <div style="font-size:44px;margin-bottom:6px">${mcIcon('sword','ic-big')}</div>
     <div style="font-weight:bold;font-size:16px;margin-bottom:2px">Minecraft PVP 排行榜</div>
-    <div style="font-size:11px;color:var(--t-dim);margin-bottom:10px">版本 v1.0.0 · 前端演示版</div>
+    <div style="font-size:11px;color:var(--t-dim);margin-bottom:10px">版本 v1.1.0 · 前端演示版</div>
     <div style="text-align:left;font-size:12px;line-height:1.9;background:var(--t-bg2);border-radius:10px;padding:10px;margin-bottom:8px">
-      <b>📦 功能特性：</b><br>
+      <b>功能特性：</b><br>
       · 8大独立模式 + 总榜（嘉豪/心动不计总分）<br>
       · HT/LT 五级段位体系（每模式独立）<br>
       · 心动榜每日10赞 · 跨天自动重置<br>
@@ -538,12 +571,12 @@ function openAbout(){
       · 数据 localStorage 存储，预留后端接口<br>
     </div>
     <div style="text-align:left;font-size:11px;color:var(--t-dim);background:var(--t-bg2);border-radius:10px;padding:10px;margin-bottom:8px">
-      <b>📋 更新日志：</b><br>
-      v1.0.0 — 初始版本，全功能上线<br>
+      <b>更新日志：</b><br>
+      v1.1.0 — 原版物品图标 + 苹果玻璃动效<br>
     </div>
-    <div style="font-size:11px;color:var(--t-dim)">制作者：Operit · Powered by ❤</div>
+    <div style="font-size:11px;color:var(--t-dim)">制作者：Operit · Powered by MC</div>
   </div>`;
-  showDialog('📖 关于', html, {closeBtn:true});
+  showDialog(mcIcon('about','ic-dlg')+' 关于', html, {closeBtn:true});
 }
 
 /* ── 8.5) 玩家个人面板（点击榜单项打开） ──
@@ -569,7 +602,7 @@ function openPlayerPanel(pid){
     const rank = rankOf(m, pid);
     const pct = Math.min(100, Math.round(s/1500*100));   // 只读胜率条（相对满分1500）
     modeHtml += `<div class="pp-mode">
-      <span class="pp-mode-icon">${MODES[m].icon}</span>
+      <span class="pp-mode-icon">${mcIcon(m,'ic-sm')}</span>
       <span class="pp-mode-name">${MODES[m].name}</span>
       <span class="badge ${t.cls}">${t.label}</span>
       <span class="pp-mode-rank">#${rank||'-'}</span>
@@ -596,7 +629,7 @@ function openPlayerPanel(pid){
       <div class="pp-name px-title">${esc(p.name)}</div>
       <div class="pp-badges">
         <span class="badge ${tierOf(total).cls}">总段位 ${tierOf(total).label}</span>
-        <span class="badge" style="background:linear-gradient(180deg,#ff6b81,#e0355a);color:#fff">❤ ${heartCount}</span>
+        <span class="badge" style="background:linear-gradient(180deg,#ff6b81,#e0355a);color:#fff">${mcIcon('heart','ic-xs')} ${heartCount}</span>
       </div>
       <div class="pp-stats">
         <div class="pp-stat"><b data-count>${total}</b><span>总积分</span></div>
@@ -605,25 +638,25 @@ function openPlayerPanel(pid){
       </div>
       <!-- v1.1 语义澄清：主按钮 → 展开对战记录（非播放） -->
       <div class="pp-actions">
-        <button class="btn-px blue sm" id="ppPrev">⏮ 上一位</button>
-        <button class="btn-px gold sm" id="ppToggle">📊 展开战绩</button>
-        <button class="btn-px blue sm" id="ppNext">下一位 ⏭</button>
+        <button class="btn-px blue sm" id="ppPrev">上一位</button>
+        <button class="btn-px gold sm" id="ppToggle">${mcIcon('crystal','ic-xs')} 展开战绩</button>
+        <button class="btn-px blue sm" id="ppNext">下一位</button>
       </div>
     </div>
     <div id="ppDetail" class="pp-detail">
-      <div style="font-size:12px;font-weight:bold;margin:8px 0 4px;color:var(--t-accent)">⚔ 各模式战绩（独立段位 · 胜率条只读）</div>
+      <div style="font-size:12px;font-weight:bold;margin:8px 0 4px;color:var(--t-accent)">${mcIcon('sword','ic-xs')} 各模式战绩（独立段位 · 胜率条只读）</div>
       ${modeHtml}
-      <div style="font-size:12px;font-weight:bold;margin:10px 0 4px;color:var(--t-accent)">📋 最近操作</div>
+      <div style="font-size:12px;font-weight:bold;margin:10px 0 4px;color:var(--t-accent)">${mcIcon('about','ic-xs')} 最近操作</div>
       ${logsHtml}
     </div>
   `;
   const isMe = session && session.pid === pid;
-  showDialog(isMe ? '👤 我的个人面板' : '👤 玩家档案', html, {closeBtn:true});
+  showDialog(isMe ? mcIcon('admin','ic-dlg')+' 我的个人面板' : mcIcon('admin','ic-dlg')+' 玩家档案', html, {closeBtn:true});
   // 主按钮：数据计数动画 + 折叠展开
   $('#ppToggle').onclick = function(){
     const d = $('#ppDetail');
     const collapsed = d.classList.toggle('collapsed');
-    this.textContent = collapsed ? '📊 展开战绩' : '📉 收起战绩';
+    this.innerHTML = collapsed ? mcIcon('crystal','ic-xs')+' 展开战绩' : mcIcon('hammer','ic-xs')+' 收起战绩';
     if(!collapsed){ runCountUp(); }
   };
   // 上一位/下一位
@@ -654,7 +687,7 @@ function runCountUp(){
 
 /* ── 9) 点赞交互（心动榜） ── */
 function handleLike(pid, btn){
-  if(!session){ toast('请先登录后再点赞 ❤'); openAuth(); return; }
+  if(!session){ toast('请先登录后再点赞'); openAuth(); return; }
   const used = DB.likes.used[session.pid] || 0;
   if(used >= 10){ toast('今日点赞已达上限（10次）明天再来吧！'); vibrate(30); return; }
   DB.likes.counts[pid] = (DB.likes.counts[pid]||0) + 1;
@@ -667,13 +700,13 @@ function handleLike(pid, btn){
   vibrate(20);
   btn.classList.add('burst');
   setTimeout(()=>btn.classList.remove('burst'), 400);
-  toast('❤ 点赞成功！（今日剩余 '+(9-used)+' 次）');
+  toast('点赞成功！（今日剩余 '+(9-used)+' 次）');
   renderList();
 }
 
 /* ── 10) 管理后台 ── */
 function openAdmin(){
-  showDialog('🛡️ 管理员验证', `
+  showDialog(mcIcon('admin','ic-dlg')+' 管理员验证', `
     <div class="row"><label>管理员密码</label><input class="inp-px" id="adminPwd" type="password" placeholder="默认 admin888"></div>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn-px gold" id="adminEnter" style="flex:1">进入后台</button>
@@ -692,10 +725,10 @@ function openAdmin(){
 function renderAdminPanel(){
   let html = '';
   html += `<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-    <button class="btn-px green sm" id="admAdd">➕ 添加玩家</button>
-    <button class="btn-px blue sm" id="admResetHeart">❤️ 重置心动榜</button>
-    <button class="btn-px sm" id="admExport">📤 导出JSON</button>
-    <button class="btn-px sm" id="admImport">📥 导入JSON</button>
+    <button class="btn-px green sm" id="admAdd">${mcIcon('diy','ic-xs')} 添加玩家</button>
+    <button class="btn-px blue sm" id="admResetHeart">${mcIcon('heart','ic-xs')} 重置心动榜</button>
+    <button class="btn-px sm" id="admExport">${mcIcon('about','ic-xs')} 导出JSON</button>
+    <button class="btn-px sm" id="admImport">${mcIcon('diy','ic-xs')} 导入JSON</button>
   </div>`;
   html += `<div style="font-size:11px;color:var(--t-dim);margin-bottom:6px">玩家管理（点击"保存"即重算段位与排名）：</div>`;
   html += `<div id="admList">`;
@@ -714,12 +747,12 @@ function renderAdminPanel(){
     html += `</div>`;
   });
   html += `</div>`;
-  html += `<div style="margin-top:12px;font-size:11px;color:var(--t-dim)">📋 操作日志：</div><div id="admLogs">`;
+  html += `<div style="margin-top:12px;font-size:11px;color:var(--t-dim)">${mcIcon('about','ic-xs')} 操作日志：</div><div id="admLogs">`;
   DB.logs.slice(0,20).forEach(l=>{
     html += `<div class="log-line">${fmtTime(l.t)} · ${esc(l.action)} ${esc(l.detail||'')}</div>`;
   });
   html += `</div>`;
-  showDialog('🛡️ 管理后台', html, {closeBtn:true});
+  showDialog(mcIcon('admin','ic-dlg')+' 管理后台', html, {closeBtn:true});
   // 绑定事件
   $('#admAdd').onclick = admAddPlayer;
   $('#admResetHeart').onclick = ()=>{ DB.likes.counts = {}; DB.likes.used = {}; addLog('重置心动榜',''); saveDB(); toast('心动榜已重置'); renderAdminPanel(); };
@@ -748,7 +781,7 @@ function renderAdminPanel(){
   });
 }
 function admAddPlayer(){
-  showDialog('➕ 添加玩家', `
+  showDialog(mcIcon('diy','ic-dlg')+' 添加玩家', `
     <div class="row"><label>游戏ID</label><input class="inp-px" id="newName" placeholder="玩家ID"></div>
     <div class="row"><label>密码</label><input class="inp-px" id="newPwd" value="9"></div>
     <div class="row"><label>头像(emoji)</label><input class="inp-px" id="newAvatar" value="🧑"></div>
@@ -779,7 +812,7 @@ function admExport(){
   toast('已导出数据');
 }
 function admImport(){
-  showDialog('📥 导入数据', `
+  showDialog(mcIcon('diy','ic-dlg')+' 导入数据', `
     <div class="row"><label>粘贴JSON数据</label><textarea class="inp-px" id="importBox" rows="6" style="resize:vertical"></textarea></div>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn-px green" id="importSave" style="flex:1">导入</button>
@@ -909,7 +942,7 @@ function init(){
     if(item) openPlayerPanel(item.dataset.pid);
   });
   // 迷你播放条
-  $('#mpBtn').onclick = ()=>{ toggleMusic(); $('#mpBtn').textContent = musicPlaying?'⏸':'▶'; };
+  $('#mpBtn').onclick = ()=>{ toggleMusic(); $('#mpBtn').innerHTML = musicPlaying?mcIcon('musicPlay','ic-sm'):mcIcon('music','ic-sm'); };
   $('#mpClose').onclick = ()=>{ stopMusic(); };
   // 窗口尺寸变化时修正滑块
   window.addEventListener('resize', ()=>{
