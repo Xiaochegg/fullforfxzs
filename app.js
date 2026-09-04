@@ -366,25 +366,67 @@ function switchMode(key){
   });
   const btn = document.querySelector('.mode-item[data-mode="'+key+'"]');
   if(btn){
-    btn.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
-    setTimeout(()=>updateGlider(btn), 200);
+    centerMode(btn, true);   // 选中项自动滚到可视区中央
   }
   renderList();
   updateModeFade();
 }
-/* 模式栏边缘淡出状态机：scroll 监听切换 at-start / at-end / at-both */
+/* 模式栏边缘淡出状态机：scroll 监听切换 at-start / at-end / at-both
+   + 纯 JS 兜底遮罩（CSS mask 万一不生效，强行补渐变 div 遮罩） */
 function updateModeFade(){
   const bar = $('#modeBar');
   if(!bar) return;
   const maxScroll = bar.scrollWidth - bar.clientWidth;
-  const atStart = bar.scrollLeft <= 4;
-  const atEnd = bar.scrollLeft >= maxScroll - 4;
+  const atStart = bar.scrollLeft <= 2;
+  const atEnd = bar.scrollLeft >= maxScroll - 2;
   bar.classList.remove('at-start','at-end','at-both');
-  if(maxScroll <= 0){ bar.classList.add('at-both'); return; }   // 桌面宽屏放得下 → 无淡出
-  if(atStart && atEnd){ bar.classList.add('at-both'); }
-  else if(atStart){ bar.classList.add('at-start'); }
-  else if(atEnd){ bar.classList.add('at-end'); }
+  if(maxScroll <= 0){ bar.classList.add('at-both'); }        // 桌面宽屏放得下 → 无淡出
+  else if(atStart && atEnd){ bar.classList.add('at-both'); }
+  else if(atStart){ bar.classList.add('at-start'); }          // 初始：左实右淡
+  else if(atEnd){ bar.classList.add('at-end'); }              // 末尾：左淡右实
   // 默认（中间）：CSS 基础 mask 即两侧淡出
+  syncModeFadeFallback();
+}
+
+/* ── 纯 JS 兜底遮罩：检测 CSS mask 是否真的生效，不生效就用渐变 div 顶上 ── */
+let modeFadeInited = false;
+function initModeFadeFallback(){
+  if(modeFadeInited) return;
+  modeFadeInited = true;
+  const bar = $('#modeBar');
+  if(!bar) return;
+  const wrap = bar.parentElement;
+  if(!wrap) return;
+  // 检测 mask 是否真实生效（webkitMaskImage 或 maskImage 含 gradient）
+  const cs = getComputedStyle(bar);
+  const maskOk = (cs.webkitMaskImage && cs.webkitMaskImage !== 'none' && /gradient/i.test(cs.webkitMaskImage))
+              || (cs.maskImage && cs.maskImage !== 'none' && /gradient/i.test(cs.maskImage));
+  if(maskOk) return;   // CSS mask 生效 → 无需兜底
+  // 建立左右两个渐变遮罩 div
+  const mk = (side)=>{
+    const d = document.createElement('div');
+    d.className = 'mode-fade-fb mode-fade-'+side;
+    d.style.cssText = 'position:absolute;top:0;bottom:0;width:36px;'+side+':0;pointer-events:none;z-index:5;transition:opacity .25s;';
+    wrap.appendChild(d);
+    return d;
+  };
+  window.__fbL = mk('left');
+  window.__fbR = mk('right');
+  syncModeFadeFallback();
+}
+function syncModeFadeFallback(){
+  if(!window.__fbL || !window.__fbR) return;
+  const bar = $('#modeBar');
+  if(!bar) return;
+  window.__fbL.style.opacity = bar.classList.contains('at-start') ? 0 : 1;
+  window.__fbR.style.opacity = bar.classList.contains('at-end')   ? 0 : 1;
+}
+
+/* 模式栏选中项自动居中（供点击后调用） */
+function centerMode(btn, smooth){
+  if(!btn) return;
+  btn.scrollIntoView({behavior: smooth?'smooth':'auto', inline:'center', block:'nearest'});
+  setTimeout(()=>{ updateGlider(btn); updateModeFade(); }, smooth?220:0);
 }
 
 /* ── 7) 弹窗系统 ── */
@@ -916,10 +958,11 @@ function init(){
   // P3：模式栏横向滚动 → 实时更新渐隐遮罩
   $('#modeBar').addEventListener('scroll', updateModeFade, {passive:true});
   updateModeFade();
+  initModeFadeFallback();   // 纯 JS 兜底遮罩（CSS mask 不生效时补渐变 div）
   // 首屏：当前选中模式立即居中一次（behavior:'auto'，无动画直接定位）
   requestAnimationFrame(()=>{
     const onBtn = document.querySelector('.mode-item.on');
-    if(onBtn){ onBtn.scrollIntoView({behavior:'auto', inline:'center', block:'nearest'}); updateModeFade(); }
+    if(onBtn){ centerMode(onBtn, false); }
   });
   // 顶部导航
   $$('.nav-item').forEach(btn=>{
@@ -944,10 +987,12 @@ function init(){
   // 迷你播放条
   $('#mpBtn').onclick = ()=>{ toggleMusic(); $('#mpBtn').innerHTML = musicPlaying?mcIcon('musicPlay','ic-sm'):mcIcon('music','ic-sm'); };
   $('#mpClose').onclick = ()=>{ stopMusic(); };
-  // 窗口尺寸变化时修正滑块
+  // 窗口尺寸变化时修正滑块 + 遮罩
   window.addEventListener('resize', ()=>{
     const btn = document.querySelector('.mode-item.on');
     if(btn) updateGlider(btn);
+    updateModeFade();
+    initModeFadeFallback();
   });
   initPullRefresh();
   // ✅ Footer 年份自动更新
