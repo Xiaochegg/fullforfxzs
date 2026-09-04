@@ -339,15 +339,19 @@ function switchMode(key){
   renderList();
   updateModeFade();
 }
-/* P3：模式栏滚动端点 → 自动隐藏对应渐隐遮罩 */
+/* 模式栏边缘淡出状态机：scroll 监听切换 at-start / at-end / at-both */
 function updateModeFade(){
   const bar = $('#modeBar');
   if(!bar) return;
-  const l = $('.mode-fade-l'), r = $('.mode-fade-r');
-  if(!l || !r) return;
   const maxScroll = bar.scrollWidth - bar.clientWidth;
-  l.classList.toggle('hidden-fade', bar.scrollLeft <= 4);
-  r.classList.toggle('hidden-fade', bar.scrollLeft >= maxScroll - 4);
+  const atStart = bar.scrollLeft <= 4;
+  const atEnd = bar.scrollLeft >= maxScroll - 4;
+  bar.classList.remove('at-start','at-end','at-both');
+  if(maxScroll <= 0){ bar.classList.add('at-both'); return; }   // 桌面宽屏放得下 → 无淡出
+  if(atStart && atEnd){ bar.classList.add('at-both'); }
+  else if(atStart){ bar.classList.add('at-start'); }
+  else if(atEnd){ bar.classList.add('at-end'); }
+  // 默认（中间）：CSS 基础 mask 即两侧淡出
 }
 
 /* ── 7) 弹窗系统 ── */
@@ -807,34 +811,62 @@ function applyCfg(){
   renderList();
 }
 
-/* ── 12) 下拉刷新（简单实现） ── */
+/* ── 12) 下拉刷新「意图闸门」重做（最终版） ──
+   必须同时满足：起点在顶 + 纵向意图 + 高阈值 + 松手判定 + 冷却 + 弹窗禁用 */
+const PTR = {
+  armed:false, pulling:false, sy:0, sx:0, dy:0,
+  TH:88, DAMP:.35, MAX:140, cool:false
+};
+function ptrDialogOpen(){
+  return !!document.querySelector('#overlay:not(.hidden)') || document.body.classList.contains('dialog-open');
+}
+function setPull(v){
+  PTR.dy = v;
+  const ind = $('#ptrIndicator'), ring = $('#ptrRing'), txt = $('#ptrText');
+  if(!ind) return;
+  if(v <= 0){ ind.classList.remove('show','spin'); txt.textContent='下拉刷新'; ring.style.transform=''; return; }
+  ind.classList.add('show'); ind.classList.remove('spin');
+  const prog = Math.min(1, v / PTR.TH);
+  ring.style.transform = 'rotate(' + Math.round(prog*360) + 'deg)';
+  txt.textContent = v >= PTR.TH ? '释放立即刷新' : '下拉刷新';
+}
+function springBack(){ setPull(0); }
+function doRefresh(){
+  PTR.cool = true;
+  const ind = $('#ptrIndicator'), txt = $('#ptrText');
+  if(ind){ ind.classList.add('spin'); }
+  if(txt) txt.textContent = '刷新中…';
+  // 真实重载数据
+  try{ renderList(); renderUserPanel(); }catch(e){}
+  setTimeout(()=>{ springBack(); }, 550);
+  setTimeout(()=>{ PTR.cool = false; }, 2050);   // 冷却 1.5s + 回弹余量
+}
 function initPullRefresh(){
-  const wrap = $('#listWrap');
-  let startY = 0, pulling = false;
-  wrap.addEventListener('touchstart', e=>{
-    if(wrap.scrollTop <= 0){ startY = e.touches[0].clientY; pulling = true; }
+  document.addEventListener('touchstart', e=>{
+    PTR.armed = (window.scrollY === 0) && !PTR.cool && !ptrDialogOpen();
+    PTR.sx = e.touches[0].clientX; PTR.sy = e.touches[0].clientY;
+    PTR.pulling = false; PTR.dy = 0;
   }, {passive:true});
-  wrap.addEventListener('touchmove', e=>{
-    if(!pulling) return;
-    const dy = e.touches[0].clientY - startY;
-    if(dy > 40 && wrap.scrollTop <= 0){
-      $('#pullTip').textContent = '⟳ 松手刷新';
+  document.addEventListener('touchmove', e=>{
+    if(!PTR.armed) return;
+    const dx = e.touches[0].clientX - PTR.sx;
+    const dy = e.touches[0].clientY - PTR.sy;
+    // 横滑意图 → 立即退出（模式栏横滑场景），本次手势永不再介入
+    if(!PTR.pulling && Math.abs(dx) > Math.abs(dy)){ PTR.armed = false; return; }
+    // 已滚离顶部 → 复位
+    if(window.scrollY > 0){ PTR.dy = 0; setPull(0); return; }
+    // 纵向下拉 → 阻尼位移 + 阻止原生滚动
+    if(dy > 0){
+      PTR.pulling = true;
+      e.preventDefault();
+      setPull(Math.min(PTR.MAX, dy * PTR.DAMP));
     }
+  }, {passive:false});
+  document.addEventListener('touchend', ()=>{
+    if(PTR.pulling && PTR.dy >= PTR.TH && !PTR.cool){ doRefresh(); }
+    else { springBack(); }
+    PTR.armed = PTR.pulling = false; PTR.dy = 0;
   }, {passive:true});
-  wrap.addEventListener('touchend', ()=>{
-    if(pulling){
-      pulling = false;
-      const tip = $('#pullTip');
-      if(tip.textContent === '⟳ 松手刷新'){
-        tip.textContent = '🔄 刷新中...';
-        setTimeout(()=>{
-          renderList();
-          tip.textContent = '↓ 下拉刷新';
-          toast('已刷新 ✨');
-        }, 600);
-      }
-    }
-  });
 }
 
 /* ── 13) 初始化 ── */
@@ -851,6 +883,11 @@ function init(){
   // P3：模式栏横向滚动 → 实时更新渐隐遮罩
   $('#modeBar').addEventListener('scroll', updateModeFade, {passive:true});
   updateModeFade();
+  // 首屏：当前选中模式立即居中一次（behavior:'auto'，无动画直接定位）
+  requestAnimationFrame(()=>{
+    const onBtn = document.querySelector('.mode-item.on');
+    if(onBtn){ onBtn.scrollIntoView({behavior:'auto', inline:'center', block:'nearest'}); updateModeFade(); }
+  });
   // 顶部导航
   $$('.nav-item').forEach(btn=>{
     btn.addEventListener('click', ()=>{
